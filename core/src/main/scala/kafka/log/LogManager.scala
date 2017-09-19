@@ -433,11 +433,7 @@ class LogManager(val logDirs: Array[File],
     for(log <- allLogs; if !log.config.compact) {
       orderedLogList.add((log.topicAndPartition, log.size))
     }
-    orderedLogList.sort(new Comparator[(TopicAndPartition, Long)] {
-      override def compare(o1: (TopicAndPartition, Long), o2: (TopicAndPartition, Long)): Int = {
-        Integer.valueOf(String.valueOf(o1._2 - o2._2))
-      }
-    })
+
     for(log <- allLogs; if !log.config.compact) {
       debug("Garbage collecting '" + log.name + "'")
       total += log.deleteOldSegments()

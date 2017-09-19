@@ -681,6 +681,19 @@ class Log(val dir: File,
   }
 
 
+  private def diskAvailablePercent():Double ={
+    try{
+      val currentDir = new File(dir.getAbsolutePath)
+      val totalSize = currentDir.getTotalSpace
+      val freeSize = currentDir.getFreeSpace
+      if(totalSize <= 0) return 0
+      freeSize / java.lang.Double.valueOf(String.valueOf(totalSize))
+    }catch {
+      case e: Exception => error("[fiberhome] deleteRetenionDiskSizeBreachedSegments error : ",e)
+    }
+    0.0D
+  }
+
   /**
     * 根据磁盘大小删除log日志，只删除最早的一个logSegment
     * @return
@@ -694,16 +707,14 @@ class Log(val dir: File,
       val availablePercent = freeSize / java.lang.Double.valueOf(String.valueOf(totalSize))
 
       //计算要删除多少字节
-
       //只删除最早的一个logSegment
       if(availablePercent <= 0.5){
-        val deleteSize = (0.5 - availablePercent) * totalSize
-
-        info(s"Fiberhome : Current kafka log dir $currentDir , totalSize = $totalSize , freeSize = $freeSize , availablePercent = $availablePercent")
+        var deleteSize = (0.5 - availablePercent) * totalSize
         def shouldDelete(segment: LogSegment) = {
-          val earliestLogSegment = logSegments.minBy(_.lastModified)
-          if (segment.lastModified <= earliestLogSegment.lastModified) {
-            info(s"fiberhome -> currentLogSegmentSize = ${logSegments.size}")
+          info(s"Fiberhome : Current kafka log dir $currentDir , totalSize = $totalSize ," +
+            s" freeSize = $freeSize , availablePercent = $availablePercent , deleteSize = $deleteSize")
+          if (deleteSize > 0) {
+            deleteSize -= segment.size
             true
           } else {
             false
